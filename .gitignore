@@ -1,0 +1,13 @@
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+*.tsbuildinfo
+.pnpm-store/
+.vs/
+.vscode/
+*.user
+*.suo
+.env
+TestResults/
+**/.data-protection-keys/

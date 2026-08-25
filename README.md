@@ -1,0 +1,1 @@
+This project is a learning MVP focused on development best practices using AI.

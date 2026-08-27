@@ -18,7 +18,7 @@ React, TypeScript, Vite, Tailwind CSS, .NET 10, PostgreSQL, Entity Framework Cor
 
 ## Backend architecture
 
-The API uses vertical slices under `src/InvestFlow.Api/Features`. Each feature owns its endpoints, request contracts, validators, and response models. Business entities and financial calculations live under `Domain`; PostgreSQL and Entity Framework configuration live under `Infrastructure/Persistence`. Backend tests are kept with the API under `src/InvestFlow.Api/Tests`.
+The API uses vertical slices under `src/InvestFlow.Api/Features`. Each feature owns its endpoints, request contracts, validators, and response models. Business entities and financial calculations live under `Domain`; PostgreSQL and Entity Framework configuration live under `Infrastructure/Persistence`. Fast unit tests live under `src/InvestFlow.Api/Tests`; database integration and end-to-end API tests live under `src/InvestFlow.Api.IntegrationTests`.
 
 ## Frontend architecture
 
@@ -38,6 +38,22 @@ The development schema is created on first API startup. A local administrator is
 
 This short password bypass is restricted to the development seed; registered accounts still follow the normal password policy. Override the local connection string with `ConnectionStrings__Postgres` and seed settings with the `DevelopmentSeed__*` environment variables when needed.
 
+## Run with Docker
+
+1. Copy `.env.example` to `.env` and replace `POSTGRES_PASSWORD` with a private value.
+2. Run `docker compose up --build` from the repository root.
+3. Open `http://localhost:5173` and create an account.
+
+The Compose stack starts the React frontend on port `5173`, the API on port `5017`, PostgreSQL on port `5432`, and Redis on port `6379`. Override these ports in `.env` if necessary. PostgreSQL data, Redis data, and ASP.NET Core data-protection keys are stored in named volumes and survive container recreation.
+
+The API runs in Production mode and applies pending database migrations when the container starts. Use `docker compose down` to stop the stack without removing its data.
+
+## Dashboard cache
+
+The dashboard and Monthly X-Ray use a five-minute cache keyed by user and month. Configure Redis with the `ConnectionStrings__Redis` environment variable, for example `localhost:6379`. When that connection string is not configured, the API uses an in-memory cache, keeping local development and tests self-contained. If Redis becomes unavailable while the API is running, dashboard reads fall back to PostgreSQL.
+
+Changes to transactions, categories, accounts, investments, and contributions invalidate the affected user's dashboard cache. Net-worth snapshots are updated when accounts or investments change instead of during dashboard reads.
+
 ## Database migrations
 
 The API applies pending Entity Framework migrations automatically when it starts in Development. To manage them manually from the repository root:
@@ -46,6 +62,22 @@ The API applies pending Entity Framework migrations automatically when it starts
 2. Create a migration with `dotnet tool run dotnet-ef migrations add MigrationName --project src/InvestFlow.Api --startup-project src/InvestFlow.Api --output-dir Infrastructure/Persistence/Migrations`.
 3. Apply pending migrations with `dotnet tool run dotnet-ef database update --project src/InvestFlow.Api --startup-project src/InvestFlow.Api`.
 
+## Backend tests
+
+The backend uses xUnit v3 and Microsoft Testing Platform. Run the fast, Docker-independent unit suite with:
+
+```powershell
+dotnet test src/InvestFlow.Api/Tests/InvestFlow.Api.Tests.csproj
+```
+
+Integration and end-to-end tests exercise the real HTTP pipeline, authentication, Entity Framework migrations, PostgreSQL constraints, and user isolation. They use Testcontainers to create a disposable PostgreSQL instance, so Docker Desktop (or another compatible Docker engine) must be running; the Compose stack does not need to be started first.
+
+```powershell
+dotnet test src/InvestFlow.Api.IntegrationTests/InvestFlow.Api.IntegrationTests.csproj
+```
+
+Run every backend suite with `dotnet test InvestFlow.slnx`. Test data uses unique users, and the PostgreSQL container is shared only within the integration test run to keep execution isolated and reasonably fast.
+
 ## Verify
 
-Run `dotnet test`, then `pnpm lint`, `pnpm test`, and `pnpm build` from `src/InvestFlow.Web`.
+Run the backend suites above, then run `pnpm lint`, `pnpm test`, and `pnpm build` from `src/InvestFlow.Web`.

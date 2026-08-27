@@ -41,8 +41,8 @@ export function BudgetPage({ month }: { month: string }) {
       {error && <Notice message={error} />}
       <div className="grid gap-4 sm:grid-cols-3">
         <MetricCard label={t('budget.total')} value={formatMoney(total, locale)} icon={PiggyBank} tone="blue" />
-        <MetricCard label={t('budget.spent')} value={formatMoney(spent, locale)} icon={CreditCard} tone="coral" />
-        <MetricCard label={t('budget.available')} value={formatMoney(total - spent, locale)} icon={WalletCards} tone={total - spent >= 0 ? 'green' : 'coral'} />
+        <MetricCard label={t('budget.spent')} value={formatMoney(spent, locale)} icon={CreditCard} tone="coral" emphasizeValue />
+        <MetricCard label={t('budget.available')} value={formatMoney(total - spent, locale)} icon={WalletCards} tone={total - spent >= 0 ? 'green' : 'coral'} emphasizeValue />
       </div>
       <section className="card overflow-hidden">
         <div className="border-b border-[#e6e7e1] px-5 py-4"><h2 className="font-bold">{t('budget.categoryLimits')}</h2></div>
@@ -67,8 +67,8 @@ function BudgetRow({ category, budget, isSaving, onSave }: { category: Category;
 
   return (
     <div className="grid gap-4 p-5 md:grid-cols-[1fr_1.2fr_180px] md:items-center">
-      <div className="flex items-center gap-3"><i className="size-3 rounded-full" style={{ background: category.color }} /><div><div className="font-semibold">{category.name}</div><div className="text-xs text-[#7a847f]">{t('budget.spentValue', { value: formatMoney(budget?.spent ?? 0, locale) })}</div></div></div>
-      <div><div className="mb-2 flex justify-between text-xs text-[#737d78]"><span>{t('budget.used', { value: Math.round(usedPercentage) })}</span><span>{t('budget.left', { value: formatMoney(budget?.remaining ?? amount, locale) })}</span></div><div className="h-2 overflow-hidden rounded-full bg-[#eceee9]"><div className={`h-full rounded-full ${usedPercentage >= 100 ? 'bg-[#cf6656]' : 'bg-[#338263]'}`} style={{ width: `${usedPercentage}%` }} /></div></div>
+      <div className="flex items-center gap-3"><i className="size-3 rounded-full" style={{ background: category.color }} /><div><div className="font-semibold">{category.name}</div><div className="text-xs font-semibold text-[#c4483a]">{t('budget.spentValue', { value: formatMoney(budget?.spent ?? 0, locale) })}</div></div></div>
+      <div><div className="mb-2 flex justify-between text-xs text-[#737d78]"><span className="font-semibold text-[#c4483a]">{t('budget.used', { value: Math.round(usedPercentage) })}</span><span className={(budget?.remaining ?? amount) >= 0 ? 'font-semibold text-[#18734d]' : 'font-semibold text-[#c4483a]'}>{t('budget.left', { value: formatMoney(budget?.remaining ?? amount, locale) })}</span></div><div className="h-2 overflow-hidden rounded-full bg-[#f4dfdb]"><div className={`h-full rounded-full ${usedPercentage >= 100 ? 'bg-[#bd3f32]' : 'bg-[#d75a4c]'}`} style={{ width: `${usedPercentage}%` }} /></div></div>
       <div className="flex gap-2"><input aria-label={t('budget.inputLabel', { name: category.name })} className="field" type="number" min="0" step="10" value={amount} onChange={event => setAmount(Number(event.target.value))} /><button type="button" aria-label={t('budget.saveLabel', { name: category.name })} disabled={isSaving || amount === budget?.amount} onClick={() => onSave(amount)} className="btn-secondary !px-3">{isSaving ? '…' : <Check size={16} />}</button></div>
     </div>
   )

@@ -17,14 +17,16 @@ public static class DependencyInjection
         IHostEnvironment environment)
     {
         services.AddDatabase(configuration);
+        services.AddInvestFlowCaching(configuration);
         services.AddIdentity();
-        services.AddInvestFlowDataProtection(environment);
+        services.AddInvestFlowDataProtection(configuration, environment);
         services.AddAuthorization();
         services.AddValidatorsFromAssemblyContaining<Program>();
         services.AddOpenApi();
         services.AddProblemDetails();
         services.AddSingleton(TimeProvider.System);
         services.AddScoped<DashboardService>();
+        services.AddScoped<NetWorthSnapshotService>();
         services.AddScoped<DevelopmentIdentitySeeder>();
         services.Configure<DevelopmentSeedOptions>(
             configuration.GetSection(DevelopmentSeedOptions.SectionName));
@@ -35,16 +37,20 @@ public static class DependencyInjection
 
     private static void AddInvestFlowDataProtection(
         this IServiceCollection services,
+        IConfiguration configuration,
         IHostEnvironment environment)
     {
         var dataProtection = services.AddDataProtection();
-        if (!environment.IsDevelopment())
+        var configuredKeyPath = configuration["DataProtection:KeyPath"];
+        if (string.IsNullOrWhiteSpace(configuredKeyPath) && !environment.IsDevelopment())
         {
             return;
         }
 
-        var keyDirectory = new DirectoryInfo(
-            Path.Combine(environment.ContentRootPath, ".data-protection-keys"));
+        var keyPath = string.IsNullOrWhiteSpace(configuredKeyPath)
+            ? Path.Combine(environment.ContentRootPath, ".data-protection-keys")
+            : configuredKeyPath;
+        var keyDirectory = new DirectoryInfo(keyPath);
         dataProtection.PersistKeysToFileSystem(keyDirectory);
     }
 
@@ -54,6 +60,29 @@ public static class DependencyInjection
             ?? throw new InvalidOperationException("Connection string 'Postgres' is not configured.");
 
         services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
+    }
+
+    private static void AddInvestFlowCaching(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var redisConnection = configuration.GetConnectionString("Redis");
+        if (string.IsNullOrWhiteSpace(redisConnection))
+        {
+            services.AddDistributedMemoryCache();
+        }
+        else
+        {
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = redisConnection;
+                options.InstanceName = "InvestFlow:";
+            });
+        }
+
+        services.Configure<DashboardCacheOptions>(
+            configuration.GetSection(DashboardCacheOptions.SectionName));
+        services.AddSingleton<DashboardCache>();
     }
 
     private static void AddIdentity(this IServiceCollection services)

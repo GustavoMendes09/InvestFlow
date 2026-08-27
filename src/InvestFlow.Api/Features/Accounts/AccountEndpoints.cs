@@ -1,6 +1,7 @@
 using FluentValidation;
 using InvestFlow.Api.Domain.Accounts;
 using InvestFlow.Api.Features.Common;
+using InvestFlow.Api.Features.Dashboard;
 using InvestFlow.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -41,6 +42,7 @@ public static class AccountEndpoints
         IValidator<SaveAccountRequest> validator,
         HttpContext context,
         AppDbContext database,
+        NetWorthSnapshotService snapshotService,
         CancellationToken cancellationToken)
     {
         if (await validator.ValidateRequestAsync(request, cancellationToken) is { } validationProblem)
@@ -48,9 +50,10 @@ public static class AccountEndpoints
             return validationProblem;
         }
 
+        var userId = context.User.GetUserId();
         var account = new Account
         {
-            UserId = context.User.GetUserId(),
+            UserId = userId,
             Name = request.Name.Trim(),
             Balance = request.Balance,
             IsDebt = request.IsDebt
@@ -58,6 +61,7 @@ public static class AccountEndpoints
 
         database.Accounts.Add(account);
         await database.SaveChangesAsync(cancellationToken);
+        await snapshotService.UpdateCurrentAsync(userId, cancellationToken);
 
         return Results.Created($"/api/accounts/{account.Id}", account);
     }
@@ -68,6 +72,7 @@ public static class AccountEndpoints
         IValidator<SaveAccountRequest> validator,
         HttpContext context,
         AppDbContext database,
+        NetWorthSnapshotService snapshotService,
         CancellationToken cancellationToken)
     {
         if (await validator.ValidateRequestAsync(request, cancellationToken) is { } validationProblem)
@@ -75,7 +80,8 @@ public static class AccountEndpoints
             return validationProblem;
         }
 
-        var account = await FindOwnedAccountAsync(id, context.User.GetUserId(), database, cancellationToken);
+        var userId = context.User.GetUserId();
+        var account = await FindOwnedAccountAsync(id, userId, database, cancellationToken);
         if (account is null)
         {
             return Results.NotFound();
@@ -86,6 +92,7 @@ public static class AccountEndpoints
         account.IsDebt = request.IsDebt;
 
         await database.SaveChangesAsync(cancellationToken);
+        await snapshotService.UpdateCurrentAsync(userId, cancellationToken);
         return Results.Ok(account);
     }
 
@@ -93,9 +100,11 @@ public static class AccountEndpoints
         Guid id,
         HttpContext context,
         AppDbContext database,
+        NetWorthSnapshotService snapshotService,
         CancellationToken cancellationToken)
     {
-        var account = await FindOwnedAccountAsync(id, context.User.GetUserId(), database, cancellationToken);
+        var userId = context.User.GetUserId();
+        var account = await FindOwnedAccountAsync(id, userId, database, cancellationToken);
         if (account is null)
         {
             return Results.NotFound();
@@ -103,6 +112,7 @@ public static class AccountEndpoints
 
         database.Accounts.Remove(account);
         await database.SaveChangesAsync(cancellationToken);
+        await snapshotService.UpdateCurrentAsync(userId, cancellationToken);
 
         return Results.NoContent();
     }

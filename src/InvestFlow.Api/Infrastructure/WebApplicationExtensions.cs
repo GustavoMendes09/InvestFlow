@@ -8,7 +8,10 @@ public static class WebApplicationExtensions
 {
     public static async Task InitialiseDatabaseAsync(this WebApplication application)
     {
-        if (!application.Environment.IsDevelopment())
+        var migrateOnStartup = application.Configuration.GetValue(
+            "Database:MigrateOnStartup",
+            application.Environment.IsDevelopment());
+        if (!migrateOnStartup)
         {
             return;
         }
@@ -17,7 +20,10 @@ public static class WebApplicationExtensions
         var database = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         await database.Database.MigrateAsync();
 
-        var identitySeeder = scope.ServiceProvider.GetRequiredService<DevelopmentIdentitySeeder>();
-        await identitySeeder.SeedAsync();
+        if (application.Environment.IsDevelopment())
+        {
+            var identitySeeder = scope.ServiceProvider.GetRequiredService<DevelopmentIdentitySeeder>();
+            await identitySeeder.SeedAsync();
+        }
     }
 }

@@ -1,0 +1,12 @@
+.git
+.gitignore
+.env
+**/.data-protection-keys
+**/bin
+**/obj
+**/node_modules
+**/dist
+**/coverage
+*.user
+*.suo
+*.log

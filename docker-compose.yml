@@ -1,0 +1,77 @@
+name: investflow
+
+services:
+  postgres:
+    image: postgres:18.6-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-investflow}
+      POSTGRES_USER: ${POSTGRES_USER:-investflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-investflow_dev}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  redis:
+    image: redis:8.8-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: api
+    restart: unless-stopped
+    init: true
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ClientOrigin: http://localhost:${WEB_PORT:-5173}
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=${POSTGRES_DB:-investflow};Username=${POSTGRES_USER:-investflow};Password=${POSTGRES_PASSWORD:-investflow_dev}
+      ConnectionStrings__Redis: redis:6379,abortConnect=false
+      Database__MigrateOnStartup: "true"
+      DataProtection__KeyPath: /var/lib/investflow/keys
+    ports:
+      - "127.0.0.1:${API_PORT:-5017}:8080"
+    volumes:
+      - data-protection-keys:/var/lib/investflow/keys
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: web
+    restart: unless-stopped
+    init: true
+    ports:
+      - "${WEB_PORT:-5173}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  redis-data:
+  data-protection-keys:

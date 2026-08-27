@@ -1,7 +1,6 @@
 using InvestFlow.Api.Domain.Accounts;
 using InvestFlow.Api.Domain.Finance;
 using InvestFlow.Api.Domain.Investments;
-using InvestFlow.Api.Domain.Snapshots;
 using InvestFlow.Api.Domain.Transactions;
 using InvestFlow.Api.Features.Common;
 using InvestFlow.Api.Infrastructure.Persistence;
@@ -9,9 +8,19 @@ using Microsoft.EntityFrameworkCore;
 
 namespace InvestFlow.Api.Features.Dashboard;
 
-public sealed class DashboardService(AppDbContext database)
+public sealed class DashboardService(AppDbContext database, DashboardCache cache)
 {
-    public async Task<DashboardResponse> GetAsync(
+    public Task<DashboardResponse> GetAsync(
+        string userId,
+        MonthPeriod period,
+        CancellationToken cancellationToken) =>
+        cache.GetOrCreateAsync(
+            userId,
+            period.Start,
+            token => BuildAsync(userId, period, token),
+            cancellationToken);
+
+    private async Task<DashboardResponse> BuildAsync(
         string userId,
         MonthPeriod period,
         CancellationToken cancellationToken)
@@ -24,8 +33,6 @@ public sealed class DashboardService(AppDbContext database)
         var income = FinancialCalculator.CalculateIncome(transactions);
         var expenses = FinancialCalculator.CalculateExpenses(transactions);
         var netWorth = FinancialCalculator.CalculateNetWorth(accounts, investments);
-
-        await SaveCurrentSnapshotAsync(userId, period.Start, netWorth, cancellationToken);
 
         var previousNetWorth = await GetPreviousNetWorthAsync(userId, period.Start, netWorth, cancellationToken);
         var history = await GetHistoryAsync(userId, cancellationToken);
@@ -81,33 +88,6 @@ public sealed class DashboardService(AppDbContext database)
             .Where(contribution => contribution.Date >= period.Start && contribution.Date < period.End)
             .SumAsync(contribution => (decimal?)contribution.Amount, cancellationToken)
         ?? 0;
-
-    private async Task SaveCurrentSnapshotAsync(
-        string userId,
-        DateOnly month,
-        decimal netWorth,
-        CancellationToken cancellationToken)
-    {
-        var snapshot = await database.MonthlySnapshots.FirstOrDefaultAsync(
-            item => item.UserId == userId && item.Month == month,
-            cancellationToken);
-
-        if (snapshot is null)
-        {
-            database.MonthlySnapshots.Add(new MonthlySnapshot
-            {
-                UserId = userId,
-                Month = month,
-                NetWorth = netWorth
-            });
-        }
-        else
-        {
-            snapshot.NetWorth = netWorth;
-        }
-
-        await database.SaveChangesAsync(cancellationToken);
-    }
 
     private async Task<decimal> GetPreviousNetWorthAsync(
         string userId,

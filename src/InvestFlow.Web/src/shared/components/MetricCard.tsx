@@ -8,6 +8,7 @@ interface MetricCardProps {
   icon: LucideIcon
   tone: Tone
   note?: string
+  emphasizeValue?: boolean
 }
 
 const tones: Record<Tone, string> = {
@@ -17,7 +18,14 @@ const tones: Record<Tone, string> = {
   purple: 'bg-[#eee9f7] text-[#7352a1]',
 }
 
-export function MetricCard({ label, value, icon: Icon, tone, note }: MetricCardProps) {
+const valueTones: Record<Tone, string> = {
+  green: 'text-[#18734d]',
+  coral: 'text-[#c4483a]',
+  blue: 'text-[#315f98]',
+  purple: 'text-[#684792]',
+}
+
+export function MetricCard({ label, value, icon: Icon, tone, note, emphasizeValue = false }: MetricCardProps) {
   return (
     <div className="card p-5">
       <div className="flex items-center justify-between">
@@ -26,7 +34,7 @@ export function MetricCard({ label, value, icon: Icon, tone, note }: MetricCardP
           <Icon size={18} />
         </span>
       </div>
-      <div className="display mt-4 text-2xl font-extrabold">{value}</div>
+      <div className={`display mt-4 text-2xl font-extrabold ${emphasizeValue ? valueTones[tone] : ''}`}>{value}</div>
       {note && <p className="mt-1 text-xs text-[#7a847f]">{note}</p>}
     </div>
   )

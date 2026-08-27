@@ -1,6 +1,7 @@
 using FluentValidation;
 using InvestFlow.Api.Domain.Transactions;
 using InvestFlow.Api.Features.Common;
+using InvestFlow.Api.Features.Dashboard;
 using InvestFlow.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -47,6 +48,7 @@ public static class TransactionEndpoints
         IValidator<SaveTransactionRequest> validator,
         HttpContext context,
         AppDbContext database,
+        DashboardCache dashboardCache,
         CancellationToken cancellationToken)
     {
         if (await validator.ValidateRequestAsync(request, cancellationToken) is { } validationProblem)
@@ -59,6 +61,7 @@ public static class TransactionEndpoints
 
         database.Transactions.Add(transaction);
         await database.SaveChangesAsync(cancellationToken);
+        await dashboardCache.InvalidateAsync(transaction.UserId, cancellationToken);
 
         return Results.Created($"/api/transactions/{transaction.Id}", transaction);
     }
@@ -69,6 +72,7 @@ public static class TransactionEndpoints
         IValidator<SaveTransactionRequest> validator,
         HttpContext context,
         AppDbContext database,
+        DashboardCache dashboardCache,
         CancellationToken cancellationToken)
     {
         if (await validator.ValidateRequestAsync(request, cancellationToken) is { } validationProblem)
@@ -89,6 +93,7 @@ public static class TransactionEndpoints
 
         ApplyRequest(transaction, request);
         await database.SaveChangesAsync(cancellationToken);
+        await dashboardCache.InvalidateAsync(transaction.UserId, cancellationToken);
 
         return Results.Ok(transaction);
     }
@@ -97,6 +102,7 @@ public static class TransactionEndpoints
         Guid id,
         HttpContext context,
         AppDbContext database,
+        DashboardCache dashboardCache,
         CancellationToken cancellationToken)
     {
         var transaction = await FindOwnedTransactionAsync(
@@ -112,6 +118,7 @@ public static class TransactionEndpoints
 
         database.Transactions.Remove(transaction);
         await database.SaveChangesAsync(cancellationToken);
+        await dashboardCache.InvalidateAsync(transaction.UserId, cancellationToken);
 
         return Results.NoContent();
     }

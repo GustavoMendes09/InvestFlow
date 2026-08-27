@@ -1,6 +1,7 @@
 using FluentValidation;
 using InvestFlow.Api.Domain.Categories;
 using InvestFlow.Api.Features.Common;
+using InvestFlow.Api.Features.Dashboard;
 using InvestFlow.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -70,6 +71,7 @@ public static class CategoryEndpoints
         IValidator<SaveCategoryRequest> validator,
         HttpContext context,
         AppDbContext database,
+        DashboardCache dashboardCache,
         CancellationToken cancellationToken)
     {
         if (await validator.ValidateRequestAsync(request, cancellationToken) is { } validationProblem)
@@ -88,6 +90,7 @@ public static class CategoryEndpoints
         category.IsIncome = request.IsIncome;
 
         await database.SaveChangesAsync(cancellationToken);
+        await dashboardCache.InvalidateAsync(category.UserId, cancellationToken);
         return Results.Ok(category);
     }
 
@@ -95,6 +98,7 @@ public static class CategoryEndpoints
         Guid id,
         HttpContext context,
         AppDbContext database,
+        DashboardCache dashboardCache,
         CancellationToken cancellationToken)
     {
         var category = await FindOwnedCategoryAsync(id, context.User.GetUserId(), database, cancellationToken);
@@ -105,6 +109,7 @@ public static class CategoryEndpoints
 
         database.Categories.Remove(category);
         await database.SaveChangesAsync(cancellationToken);
+        await dashboardCache.InvalidateAsync(category.UserId, cancellationToken);
 
         return Results.NoContent();
     }

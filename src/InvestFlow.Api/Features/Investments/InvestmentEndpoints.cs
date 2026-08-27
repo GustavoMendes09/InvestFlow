@@ -1,6 +1,7 @@
 using FluentValidation;
 using InvestFlow.Api.Domain.Investments;
 using InvestFlow.Api.Features.Common;
+using InvestFlow.Api.Features.Dashboard;
 using InvestFlow.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -55,6 +56,7 @@ public static class InvestmentEndpoints
         IValidator<SaveInvestmentRequest> validator,
         HttpContext context,
         AppDbContext database,
+        NetWorthSnapshotService snapshotService,
         CancellationToken cancellationToken)
     {
         if (await validator.ValidateRequestAsync(request, cancellationToken) is { } validationProblem)
@@ -62,9 +64,10 @@ public static class InvestmentEndpoints
             return validationProblem;
         }
 
+        var userId = context.User.GetUserId();
         var investment = new Investment
         {
-            UserId = context.User.GetUserId(),
+            UserId = userId,
             Name = request.Name.Trim(),
             AssetClass = request.AssetClass.Trim(),
             InvestedAmount = request.InvestedAmount,
@@ -74,6 +77,7 @@ public static class InvestmentEndpoints
 
         database.Investments.Add(investment);
         await database.SaveChangesAsync(cancellationToken);
+        await snapshotService.UpdateCurrentAsync(userId, cancellationToken);
 
         return Results.Created($"/api/investments/{investment.Id}", investment);
     }
@@ -84,6 +88,7 @@ public static class InvestmentEndpoints
         IValidator<SaveInvestmentRequest> validator,
         HttpContext context,
         AppDbContext database,
+        NetWorthSnapshotService snapshotService,
         CancellationToken cancellationToken)
     {
         if (await validator.ValidateRequestAsync(request, cancellationToken) is { } validationProblem)
@@ -91,9 +96,10 @@ public static class InvestmentEndpoints
             return validationProblem;
         }
 
+        var userId = context.User.GetUserId();
         var investment = await FindOwnedInvestmentAsync(
             id,
-            context.User.GetUserId(),
+            userId,
             database,
             cancellationToken);
 
@@ -104,6 +110,7 @@ public static class InvestmentEndpoints
 
         ApplyRequest(investment, request);
         await database.SaveChangesAsync(cancellationToken);
+        await snapshotService.UpdateCurrentAsync(userId, cancellationToken);
 
         return Results.Ok(investment);
     }
@@ -114,6 +121,7 @@ public static class InvestmentEndpoints
         IValidator<RecordContributionRequest> validator,
         HttpContext context,
         AppDbContext database,
+        DashboardCache dashboardCache,
         CancellationToken cancellationToken)
     {
         if (await validator.ValidateRequestAsync(request, cancellationToken) is { } validationProblem)
@@ -142,6 +150,7 @@ public static class InvestmentEndpoints
         investment.InvestedAmount += request.Amount;
         database.InvestmentContributions.Add(contribution);
         await database.SaveChangesAsync(cancellationToken);
+        await dashboardCache.InvalidateAsync(investment.UserId, cancellationToken);
 
         return Results.Created(
             $"/api/investments/{id}/contributions/{contribution.Id}",
@@ -152,11 +161,13 @@ public static class InvestmentEndpoints
         Guid id,
         HttpContext context,
         AppDbContext database,
+        NetWorthSnapshotService snapshotService,
         CancellationToken cancellationToken)
     {
+        var userId = context.User.GetUserId();
         var investment = await FindOwnedInvestmentAsync(
             id,
-            context.User.GetUserId(),
+            userId,
             database,
             cancellationToken);
 
@@ -167,6 +178,7 @@ public static class InvestmentEndpoints
 
         database.Investments.Remove(investment);
         await database.SaveChangesAsync(cancellationToken);
+        await snapshotService.UpdateCurrentAsync(userId, cancellationToken);
 
         return Results.NoContent();
     }

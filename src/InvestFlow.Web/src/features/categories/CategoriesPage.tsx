@@ -48,10 +48,10 @@ export function CategoriesPage() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {categories.data?.map(category => (
           <div key={category.id} className="card flex items-center gap-4 p-5">
-            <span className="grid size-11 place-items-center rounded-xl" style={{ background: `${category.color}18`, color: category.color }}>
+            <span className={`grid size-11 place-items-center rounded-xl ${category.isIncome ? 'bg-[#e4f1e9] text-[#18734d]' : 'bg-[#fbeae6] text-[#c4483a]'}`}>
               {category.isIncome ? <Banknote size={20} /> : <FolderTree size={20} />}
             </span>
-            <div className="flex-1"><h3 className="font-bold">{category.name}</h3><p className="text-xs text-[#7a847f]">{category.isIncome ? t('categories.incomeCategory') : t('categories.expenseCategory')}</p></div>
+            <div className="flex-1"><h3 className="flex items-center gap-2 font-bold">{category.name}<i className="size-2 rounded-full" style={{ background: category.color }} /></h3><p className={`text-xs font-semibold ${category.isIncome ? 'text-[#18734d]' : 'text-[#c4483a]'}`}>{category.isIncome ? t('categories.incomeCategory') : t('categories.expenseCategory')}</p></div>
             <button type="button" aria-label={t('common.delete', { name: category.name })} disabled={deleteCategory.isPending} onClick={() => handleDelete(category.id)} className="p-2 text-[#9aa19d] hover:text-[#c8584a]"><Trash2 size={16} /></button>
           </div>
         ))}

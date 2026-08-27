@@ -31,13 +31,14 @@ export function DashboardPage({ month, navigate }: DashboardPageProps) {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label={t('dashboard.income')} value={formatMoney(dashboard.income, locale)} icon={ArrowDownLeft} tone="green" />
-        <MetricCard label={t('dashboard.expenses')} value={formatMoney(dashboard.expenses, locale)} icon={ArrowUpRight} tone="coral" />
+        <MetricCard label={t('dashboard.income')} value={formatMoney(dashboard.income, locale)} icon={ArrowDownLeft} tone="green" emphasizeValue />
+        <MetricCard label={t('dashboard.expenses')} value={formatMoney(dashboard.expenses, locale)} icon={ArrowUpRight} tone="coral" emphasizeValue />
         <MetricCard
           label={t('dashboard.leftThisMonth')}
           value={formatMoney(dashboard.balance, locale)}
           icon={WalletCards}
           tone={dashboard.balance >= 0 ? 'blue' : 'coral'}
+          emphasizeValue={dashboard.balance < 0}
           note={dashboard.income ? t('dashboard.percentOfIncome', { value: Math.round(dashboard.balance / dashboard.income * 100) }) : t('dashboard.addIncome')}
         />
         <MetricCard
@@ -80,7 +81,7 @@ export function DashboardPage({ month, navigate }: DashboardPageProps) {
                     <span className="flex items-center gap-2 font-medium">
                       <i className="size-2.5 rounded-full" style={{ background: item.color }} />{item.name}
                     </span>
-                    <span className="font-semibold">{formatMoney(item.amount, locale)}</span>
+                    <span className="font-bold text-[#c4483a]">{formatMoney(item.amount, locale)}</span>
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-[#eff0eb]">
                     <div className="h-full rounded-full" style={{ width: `${item.amount / maximumImpact * 100}%`, background: item.color }} />

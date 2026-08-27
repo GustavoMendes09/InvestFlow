@@ -83,7 +83,7 @@ export function TransactionsPage({ month }: { month: string }) {
               </thead>
               <tbody>
                 {items.map(transaction => (
-                  <tr key={transaction.id} className="border-b border-[#ecece7] last:border-0 hover:bg-[#fafbf8]">
+                  <tr key={transaction.id} className={`border-b border-l-2 border-[#ecece7] last:border-b-0 ${isIncome(transaction.type) ? 'border-l-[#35a66f] hover:bg-[#f4faf6]' : 'border-l-[#df695b] hover:bg-[#fff7f5]'}`}>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
                         <span className={`rounded-xl p-2 ${isIncome(transaction.type) ? 'bg-[#e7f2eb] text-[#24724f]' : 'bg-[#f7ece8] text-[#c05c4c]'}`}>
@@ -102,7 +102,7 @@ export function TransactionsPage({ month }: { month: string }) {
                       </span>
                     </td>
                     <td className="px-5 py-4 text-[#64706a]">{formatShortDate(transaction.date, locale)}</td>
-                    <td className={`px-5 py-4 text-right font-bold ${isIncome(transaction.type) ? 'text-[#237454]' : 'text-[#2f3934]'}`}>
+                    <td className={`px-5 py-4 text-right font-bold ${isIncome(transaction.type) ? 'text-[#18734d]' : 'text-[#c4483a]'}`}>
                       {isIncome(transaction.type) ? '+' : '−'}{formatMoneyExact(transaction.amount, locale)}
                     </td>
                     <td>

@@ -47,14 +47,14 @@ export function NetWorthPage() {
       {error && <div className="mb-4"><Notice message={error} /></div>}
       <section className="mb-5 overflow-hidden rounded-3xl bg-[#173f30] p-7 text-white sm:p-9">
         <p className="text-sm font-medium text-[#a9c9bb]">{t('netWorth.total')}</p><div className="display mt-2 text-4xl font-extrabold sm:text-5xl">{formatMoney(assets - debts, locale)}</div>
-        <div className="mt-7 grid max-w-xl grid-cols-2 gap-4"><div className="rounded-2xl bg-white/10 p-4"><p className="text-xs text-[#a9c9bb]">{t('netWorth.own')}</p><p className="mt-1 font-bold">{formatMoney(assets, locale)}</p></div><div className="rounded-2xl bg-white/10 p-4"><p className="text-xs text-[#a9c9bb]">{t('netWorth.owe')}</p><p className="mt-1 font-bold">{formatMoney(debts, locale)}</p></div></div>
+        <div className="mt-7 grid max-w-xl grid-cols-2 gap-4"><div className="rounded-2xl bg-[#2f7659] p-4"><p className="text-xs text-[#c5ead8]">{t('netWorth.own')}</p><p className="mt-1 font-bold text-white">{formatMoney(assets, locale)}</p></div><div className="rounded-2xl bg-[#743d37] p-4"><p className="text-xs text-[#f4c8c1]">{t('netWorth.owe')}</p><p className="mt-1 font-bold text-white">{formatMoney(debts, locale)}</p></div></div>
       </section>
       <div className="mb-4 flex items-center justify-between"><h2 className="font-bold">{t('netWorth.accountsDebts')}</h2><button type="button" className="btn-primary" onClick={() => setIsModalOpen(true)}><Plus size={16} /> {t('netWorth.addItem')}</button></div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {accounts.data?.map(account => (
           <div className="card flex items-center gap-4 p-5" key={account.id}>
             <span className={`rounded-xl p-3 ${account.isDebt ? 'bg-[#f9e9e6] text-[#bd594a]' : 'bg-[#e6f1ea] text-[#216c4d]'}`}>{account.isDebt ? <CreditCard size={20} /> : <Landmark size={20} />}</span>
-            <div className="flex-1"><p className="text-sm font-semibold">{account.name}</p><p className="display mt-1 text-xl font-extrabold">{account.isDebt ? '−' : ''}{formatMoney(account.balance, locale)}</p></div>
+            <div className="flex-1"><p className="text-sm font-semibold">{account.name}</p><p className={`display mt-1 text-xl font-extrabold ${account.isDebt ? 'text-[#c4483a]' : 'text-[#18734d]'}`}>{account.isDebt ? '−' : '+'}{formatMoney(account.balance, locale)}</p></div>
             <button type="button" aria-label={t('common.delete', { name: account.name })} disabled={deleteAccount.isPending} onClick={() => handleDelete(account.id)} className="p-2 text-[#9aa19d] hover:text-[#c8584a]"><Trash2 size={16} /></button>
           </div>
         ))}

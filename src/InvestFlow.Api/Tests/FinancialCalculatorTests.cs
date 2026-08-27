@@ -92,6 +92,49 @@ public sealed class FinancialCalculatorTests
         Assert.Equal(45, totals[transport]);
     }
 
+    [Fact]
+    public void ExpensesByCategory_GroupsUncategorizedExpensesWithoutLosingTheirValue()
+    {
+        var transactions = new[]
+        {
+            CreateTransaction(TransactionType.Expense, 80),
+            CreateTransaction(TransactionType.Expense, 20)
+        };
+
+        var totals = FinancialCalculator.CalculateExpensesByCategory(transactions);
+
+        Assert.Equal(100, totals[Guid.Empty]);
+    }
+
+    [Fact]
+    public void EmptyCollections_ReturnZeroForAllTransactionTotals()
+    {
+        var transactions = Array.Empty<Transaction>();
+
+        Assert.Equal(0, FinancialCalculator.CalculateIncome(transactions));
+        Assert.Equal(0, FinancialCalculator.CalculateExpenses(transactions));
+        Assert.Equal(0, FinancialCalculator.CalculateBalance(transactions));
+    }
+
+    [Theory]
+    [InlineData(1_000, 3_000, 33.3)]
+    [InlineData(2_000, 3_000, 66.7)]
+    public void SavingsRate_RoundsToOneDecimalPlace(
+        decimal invested,
+        decimal income,
+        decimal expected) =>
+        Assert.Equal(expected, FinancialCalculator.CalculateSavingsRate(invested, income));
+
+    [Fact]
+    public void GoalProgress_DoesNotMaskValuesAboveTheTarget() =>
+        Assert.Equal(125, FinancialCalculator.CalculateGoalProgress(1_250, 1_000));
+
+    [Fact]
+    public void NetWorth_WithNoAccountsOrInvestmentsIsZero() =>
+        Assert.Equal(
+            0,
+            FinancialCalculator.CalculateNetWorth(Array.Empty<Account>(), Array.Empty<Investment>()));
+
     private static Transaction CreateTransaction(
         TransactionType type,
         decimal amount,

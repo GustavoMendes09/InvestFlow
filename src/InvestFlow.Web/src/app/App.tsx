@@ -17,7 +17,13 @@ export default function App() {
     const controller = new AbortController()
     authApi.getProfile(controller.signal)
       .then(() => setAuthentication('signed-in'))
-      .catch(() => setAuthentication('signed-out'))
+      .catch(error => {
+        if (controller.signal.aborted || (error instanceof DOMException && error.name === 'AbortError')) {
+          return
+        }
+
+        setAuthentication('signed-out')
+      })
     return () => controller.abort()
   }, [])
 

@@ -2,5 +2,6 @@
   <Folder Name="/src/">
     <Project Path="src/InvestFlow.Api/InvestFlow.Api.csproj" />
     <Project Path="src/InvestFlow.Api/Tests/InvestFlow.Api.Tests.csproj" />
+    <Project Path="src/InvestFlow.Api.IntegrationTests/InvestFlow.Api.IntegrationTests.csproj" />
   </Folder>
 </Solution>
